@@ -80,7 +80,9 @@ function checkAuth(req, res) {
 // -----------------------------------------------------------------------------
 
 export function register(ctx, deps) {
-  const webServer = ctx.get('webServer')
+  // 2026-11-11 本地补丁：桌面版(Electron)拿不到 ctx.get('webServer')，
+  // 由 index.mjs 起一个等价 shim 传进来，接口只需 register({kind,path,handler})。
+  const webServer = ctx.get('webServer') || deps.webServerShim
   if (!webServer) {
     console.error('[dsh-hermes-link] webServer unavailable; HTTP routes NOT registered')
     return

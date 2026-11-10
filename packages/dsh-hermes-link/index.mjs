@@ -35,6 +35,7 @@
 //   (the install script edits this for the user.)
 
 import { fileURLToPath } from 'node:url'
+import nodeHttp from 'node:http'
 import { dirname, join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -430,9 +431,39 @@ export function apply(ctx) {
     console.error('[dsh-hermes-link v' + VERSION + '] tool registration failed:', e && e.message || e)
   }
 
+  // 8-pre. 2026-11-11 本地补丁：桌面版拿不到 webServer 服务，自己起一个
+  // 等价的 HTTP 服务。接口与 cordis webServer 一致：register({kind, path, handler})，
+  // handler(req,res) 拿的是 Node 原生 req/res（插件内部就是这么用的）。
+  let webServerShim = null
+  if (!ctx.get('webServer')) {
+    try {
+      const routes = []
+      webServerShim = {
+        register(route) { routes.push(route); return true },
+      }
+      const shimPort = Number(process.env.HERMES_LINK_PORT || 3080)
+      const srv = nodeHttp.createServer(async (req, res) => {
+        const path = String(req.url || '/').split('?')[0]
+        const r =
+          routes.find((x) => x.kind === 'exact' && x.path === path) ||
+          routes.find((x) => x.kind !== 'exact' && path.startsWith(x.path))
+        if (!r) { res.writeHead(404); res.end('not found'); return }
+        try { await r.handler(req, res) }
+        catch (e) { try { res.writeHead(500) } catch {} ; res.end(String((e && e.message) || e)) }
+      })
+      srv.on('error', (e) => console.error('[dsh-hermes-link shim] listen failed:', e && e.message || e))
+      srv.listen(shimPort, '127.0.0.1', () => {
+        console.log('[dsh-hermes-link shim] listening on http://127.0.0.1:' + shimPort + ' (routes=' + routes.length + ')')
+      })
+    } catch (e) {
+      console.error('[dsh-hermes-link shim] setup failed:', e && e.message || e)
+    }
+  }
+
   // 8. HTTP routes 闂?single register call delegates all routes.
   try {
     registerHttp(ctx, {
+      webServerShim,
       hermesHome,
       importer,
       personaLoader,
