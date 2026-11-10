@@ -219,7 +219,11 @@ export const name = 'dsh-hermes-link'
 // cordis 上下文里没有这个服务名，导致整个插件永远 pending —— apply() 一行都不执行，
 // 自起的 shim HTTP 服务也就无从谈起。这里去掉 webServer（代码里本来就有
 // ctx.get('webServer') || deps.webServerShim 的兜底），其余保持必需。
-export const inject = ['skills', 'sessions', 'agents', 'subagents', 'tokenMeter', 'workspaceRegistry', 'sessionTitle', 'sessionPersistence', 'tools']
+// 2026-11-11 本地补丁：桌面版(Electron)的 cordis 服务图和 web profile 不同，
+// 硬性 inject 任何一个不存在的服务名都会让整个插件永远 pending（apply 不执行）。
+// 这里改成空依赖 —— 插件内部本来就用 ctx.xxx ? ... : null 和 try/catch 做了保护，
+// 缺什么跳什么，不阻塞激活。HTTP 走自起的 shim（见 8-pre）。
+export const inject = []
 
 export function apply(ctx) {
   const hermesHome = detectHermesHome()
