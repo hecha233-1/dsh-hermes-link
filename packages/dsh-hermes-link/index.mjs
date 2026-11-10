@@ -74,6 +74,9 @@ import { createRotateOutboxNowTool } from './tools/rotate-outbox-now.mjs'
 import { createDispatchStatusTool } from './tools/dispatch-status.mjs'
 
 const skillDir = fileURLToPath(new URL('./skills/dsh-hermes-link', import.meta.url))
+// 2026-11-10 本地融合：把 hermes-dsh-collab 的协作规范一并注册
+// （来源 Cavan-Ou/hermes-dsh-collab，MIT；只搬 skills 内容，不引它的 index.mjs）
+const collabSkillDir = fileURLToPath(new URL('./skills/hermes-dsh-collab', import.meta.url))
 const MAX_FOUNDATION_SLICE_CHARS = 4096
 const VERSION = '0.6.11'
 
@@ -222,7 +225,7 @@ export function apply(ctx) {
     ctx.skills.registerProvider((control) =>
       new FileSystemSkillProvider(ctx, control, {
         providerName: 'dsh-hermes-link',
-        customSkillDirs: [skillDir],
+        customSkillDirs: [skillDir, collabSkillDir],
       }),
     )
   } catch (e) {
