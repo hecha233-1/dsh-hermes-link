@@ -215,7 +215,11 @@ export function buildFoundationSlice(hermesHome) {
 // -----------------------------------------------------------------------------
 
 export const name = 'dsh-hermes-link'
-export const inject = ['skills', 'webServer', 'sessions', 'agents', 'subagents', 'tokenMeter', 'workspaceRegistry', 'sessionTitle', 'sessionPersistence', 'tools']
+// 2026-11-11 本地补丁：原 inject 硬性要求 'webServer'，但桌面版(Electron)的
+// cordis 上下文里没有这个服务名，导致整个插件永远 pending —— apply() 一行都不执行，
+// 自起的 shim HTTP 服务也就无从谈起。这里去掉 webServer（代码里本来就有
+// ctx.get('webServer') || deps.webServerShim 的兜底），其余保持必需。
+export const inject = ['skills', 'sessions', 'agents', 'subagents', 'tokenMeter', 'workspaceRegistry', 'sessionTitle', 'sessionPersistence', 'tools']
 
 export function apply(ctx) {
   const hermesHome = detectHermesHome()
